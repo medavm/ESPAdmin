@@ -10,22 +10,22 @@
 
 
 
-#define ESPAD_TIMEOUT_MS 1000l*5
-#define ESPAD_PING_INTERVAL_MS 1000l*60*2
-#define ESPAD_PING_TIMEOUT_MS 1000l*10
+#define ESPAD_TIMEOUT_MS        1000l*5
+#define ESPAD_PING_INTERVAL_MS  1000l*60*2
+#define ESPAD_PING_TIMEOUT_MS   1000l*10
 
-#define ESPAD_CMD_CLOSE "CLOSE"
-#define ESPAD_CMD_SETTINGS ""
-#define ESPAD_CMD_LIVEDATA ""
-#define ESPAD_CMD_PING "PING"
-#define ESPAD_CMD_PONG "PONG"
-#define ESPAD_CMD_LOG "LOG"
-#define ESPAD_CMD_UPDATE "UPDATE"
-#define ESPAD_CMD_RESTART "RESTART"
+#define ESPAD_CMD_CLOSE         "CLOSE"
+#define ESPAD_CMD_SETTINGS      ""
+#define ESPAD_CMD_LIVEDATA      ""
+#define ESPAD_CMD_PING          "PING"
+#define ESPAD_CMD_PONG          "PONG"
+#define ESPAD_CMD_LOG           "LOG"
+#define ESPAD_CMD_UPDATE        "UPDATE"
+#define ESPAD_CMD_RESTART       "RESTART"
 
-#define ESPAD_UPDATE_REQUEST "GET /device/%s/update HTTP/1.1\r\nHost: %s:%d\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n"
+#define ESPAD_UPDATE_REQUEST    "GET /device/%s/update HTTP/1.1\r\nHost: %s:%d\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n"
 
-#define ESPAD_MESSAGE_MAX_LEN 1024*4
+#define ESPAD_MESSAGE_MAX_LEN   1024*4
 
 Client* _client;
 Client* _updateclient;
@@ -693,7 +693,26 @@ int ESPAdmin::loop()
    return 1;
 }
 
+// Queue handle
+QueueHandle_t dataQueue;
 
+#define ESPAD_TASK_CONNECT 1
+#define ESPAD_TASK_DISCONN 2
+#define ESPAD_TASK_LOG 3
+#define ESPAD_TASK
+
+//begin(url, deviceKey, autoConnect=5000)
+//status
+
+void TaskProcessData(void *pvParameters) {
+    int receivedValue;
+    while (1) {
+        if (xQueueReceive(dataQueue, &receivedValue, portMAX_DELAY)) {
+            Serial.print("Received Sensor Data: ");
+            Serial.println(receivedValue);
+        }
+    }
+}
 
 
 
