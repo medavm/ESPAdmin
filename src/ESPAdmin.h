@@ -23,23 +23,26 @@ class ESPAdmin
 
 public:
 
+    static int begin(const char* host, int port, const char* deviceKey);
 
     static int setUpdateClient(Client* client);
     static int setWSClient(Client* client);
 
-    static int connect(const char* host, int port, const  char* devicekey);
+    static int connect(int reconnectInterval = 5000);
     static int connected();
-    static int stop();
+    static int status();
+
+    static int updating();
+
+    static int disconnect();
 
     
     static int log(LogType type, const char* format, ...);
-    static int loop();
     static uint32_t unixtime();
 
 
 private:
-    static int ping();
-    
+
 };
 
 
