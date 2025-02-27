@@ -3,12 +3,12 @@
 #include <ESPAdmin.h>
 #include <WiFi.h>
 #include <ArduinoJson.h>
-#include <WiFiClient.h>
+#include <TCPClient.h>
 #include <WSClient.h>
 #include <Update.h>
 #include <EEPROM.h>
 
-
+#include "esp_websocket_client.h"
 
 #define ESPAD_TIMEOUT_MS        1000l*5
 #define ESPAD_PING_INTERVAL_MS  1000l*60*2
@@ -659,6 +659,7 @@ uint32_t ESPAdmin::unixtime()
 
 int ESPAdmin::loop()
 {
+  
     if(_wsclient != NULL)
     {
         uint8_t opcode = 0;
@@ -693,18 +694,139 @@ int ESPAdmin::loop()
    return 1;
 }
 
+
 // Queue handle
 QueueHandle_t dataQueue;
+
+// dataQueue = xQueueCreate(5, sizeof(int)); // Queue for 5 integers
+
+// if (dataQueue == NULL) {
+//     Serial.println("Failed to create queue");
+//     while (1);
+// }
 
 #define ESPAD_TASK_CONNECT 1
 #define ESPAD_TASK_DISCONN 2
 #define ESPAD_TASK_LOG 3
 #define ESPAD_TASK
 
+
+#define ESPAD_STATUS_CONNECTING 1
+#define ESPAD_STATUS_CONNECTED 2
+#define ESPAD_STATUS_CONNECTION_ERROR 3
+#define ESPAD_STATUS_DISCONNECTED 4
+
+
+#define ESPAD_ERROR_UNKNOWN 1
+
+
+static int _status = 0; 
+static int _begin = 0;
+static int _autoConnect = 0;
+static int _lastConnect = 0;
+
+
+
+static int begin(const char* host, int port, const char* deviceKey){
+    _port = port;
+    strncpy(_host, host, sizeof(_host));
+    strncpy(_devicekey, deviceKey, sizeof(_devicekey));
+
+
+}
+
+static int status(){
+
+}
+
+
+static int connected(){
+    return status() == ESPAD_STATUS_CONNECTED;  
+}
+
+static int connect(){
+
+    if(*_host == '\0' || *_devicekey == '\0'){
+        log_e("Missing remote server host/port, call begin() first");
+        return 0;
+    }
+
+    char path[256];
+    int res = snprintf(path, sizeof(path), "/device/%s/ws", _devicekey);
+
+    if(connected()){
+        __stop();
+    }
+
+    if(_wsclient==NULL){
+        if(_client==NULL){
+            _client = new TCPClient();
+            _newclient = 1;
+        }
+
+        _wsclient = new WSClient(_client, path);
+    }
+
+    _status = ESPAD_STATUS_CONNECTING;
+    log_d("starting connection to %s:%d", _host, _port);
+    _wsclient->setTimeout(ESPAD_TIMEOUT_MS);
+    if(_wsclient->connect(_host, _port)){
+        log_d("wsclient connected");
+        //ping();
+        return 1;
+    } else {
+        log_e("wsclient failed to connect");
+        return 0;
+    }
+}
+
+
+
+
+
+static int error(){
+
+}
+
+
+
+
+int ESPAdmin::connect2(const char* host, int port, const char* deviceKey){
+    
+    _status = ESPAD_STATUS_CONNECTING;
+    uint32_t t = millis();
+    
+    int cmd = ESPAD_TASK_CONNECT;
+
+    if(xQueueSend(dataQueue, &cmd, 1000 / portTICK_PERIOD_MS) != pdTRUE){
+
+    }
+    
+    
+    while (status() == ESPAD_STATUS_CONNECTING && millis() - t < ESPAD_TIMEOUT_MS){
+        
+        delay(10);
+    }
+    
+    return connected();
+}
+
+
+
+
 //begin(url, deviceKey, autoConnect=5000)
 //status
 
 void TaskProcessData(void *pvParameters) {
+
+
+
+    if(!_autoConnect > 0 && *_host != '\0' && !connected() && millis() - _lastConnect > _autoConnect){
+
+    
+    }
+
+
     int receivedValue;
     while (1) {
         if (xQueueReceive(dataQueue, &receivedValue, portMAX_DELAY)) {

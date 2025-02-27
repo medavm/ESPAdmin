@@ -28,6 +28,7 @@ public:
     static int setWSClient(Client* client);
 
     static int connect(const char* host, int port, const  char* devicekey);
+    static int connect2(const char* host, int port, const char* deviceKey);
     static int connected();
     static int stop();
 
